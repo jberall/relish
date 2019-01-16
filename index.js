@@ -11,14 +11,18 @@ internals.defaults = {
 
 const Relish = function Relish (opts) {
   this.exports = {}
-  this._opts = opts ? Hoek.applyToDefaults(internals.defaults, opts) : internals.defaults
+  this._opts = opts
+    ? Hoek.applyToDefaults(internals.defaults, opts)
+    : internals.defaults
 
-  this.parseError = (error) => {
-    return error.details.map((i) => {
+  this.parseError = error => {
+    return error.details.map(i => {
       let err = {
         key: i.context.key,
         path: i.path.join('.'),
-        message: this._opts.stripQuotes ? i.message.replace(/"/g, '') : i.message,
+        message: this._opts.stripQuotes
+          ? i.message.replace(/"/g, '')
+          : i.message,
         type: i.type.split('.').shift(),
         constraint: i.type.split('.').pop()
       }
@@ -50,7 +54,7 @@ const Relish = function Relish (opts) {
     return error
   }
 
-  this.exports.options = (opts) => {
+  this.exports.options = opts => {
     this._opts = Hoek.applyToDefaults(this._opts, opts)
 
     return this.exports
@@ -61,7 +65,19 @@ const Relish = function Relish (opts) {
     const errors = this.parseError(err)
 
     // build main error message
-    const errorMessage = errors.map((e) => e.message).join(', ')
+    const errorMessage = errors
+      .map(e => {
+        /**
+         * This will try and internationalize using the hapi-i18n
+         * If you want to use a JWT you can use the jberall/hapi-i18n
+         */
+        try {
+          return request.i18n.__(e.message)
+        } catch (error) {
+          return e.message
+        }
+      })
+      .join(', ')
 
     // retrieve validation failure source
     const source = err.output.payload.validation.source
@@ -75,4 +91,4 @@ const Relish = function Relish (opts) {
   return this.exports
 }
 
-module.exports = (opts) => new Relish(opts)
+module.exports = opts => new Relish(opts)
